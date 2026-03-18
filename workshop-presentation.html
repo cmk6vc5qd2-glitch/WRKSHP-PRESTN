@@ -1,0 +1,2616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Workshop System — AI Design Tools · Bestseller A/S</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Newsreader:ital,wght@0,300;0,400;1,300;1,400&family=DM+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f7f4ef;
+  --surface: #ffffff;
+  --surface2: #f0ece4;
+  --ink: #131210;
+  --muted: #7a756c;
+  --border: rgba(19,18,16,0.1);
+  --border-dark: rgba(19,18,16,0.22);
+  --accent: #1a3a2a;
+  --accent2: #2d6347;
+  --gold: #c4893a;
+  --gold-light: #e8b86d;
+  --red: #c0392b;
+  --mono: 'DM Mono', monospace;
+  --display: 'Syne', sans-serif;
+  --body: 'Newsreader', serif;
+}
+
+html { font-size: 15px; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--body);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* GRAIN */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events: none; z-index: 999;
+}
+
+/* FULLSCREEN */
+.studio-tab {
+  background: rgba(196,137,58,0.12) !important;
+  color: var(--gold-light) !important;
+  border-left: 2px solid var(--gold) !important;
+}
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  padding: 14px 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  white-space: nowrap;
+  display: flex; align-items: center; gap: 8px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+.fs-btn:hover { color: var(--gold-light); }
+.fs-btn svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+/* FULLSCREEN OVERLAY */
+.fs-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  background: var(--accent);
+  flex-direction: column;
+}
+.fs-overlay.active { display: flex; }
+
+.fs-nav {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(0,0,0,0.35);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  flex-shrink: 0;
+}
+
+.fs-tab {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  padding: 12px 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+.fs-tab:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); }
+.fs-tab.active { color: var(--gold-light); background: rgba(255,255,255,0.07); }
+
+.fs-close {
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  padding: 12px 20px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  transition: color 0.2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.fs-close:hover { color: #e07070; }
+
+.fs-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+
+.fs-content .page { display: none; }
+.fs-content .page.active { display: block; }
+
+/* Current section indicator */
+.fs-indicator {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.25);
+  padding: 12px 20px;
+  border-left: 1px solid rgba(255,255,255,0.07);
+  white-space: nowrap;
+}
+
+/* NAV TABS */
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--accent);
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid var(--accent2);
+  overflow-x: auto;
+}
+
+.nav-tab {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.5);
+  padding: 14px 22px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  white-space: nowrap;
+  transition: all 0.2s;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.nav-tab:hover { color: rgba(255,255,255,0.85); background: rgba(255,255,255,0.05); }
+.nav-tab.active { color: var(--gold-light); background: rgba(255,255,255,0.08); }
+
+/* PAGES */
+.page { display: none; animation: fadeIn 0.4s ease both; }
+.page.active { display: block; }
+
+@keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform:none; } }
+
+/* SHARED */
+.wrap { max-width: 1100px; margin: 0 auto; padding: 56px 48px; }
+.wrap-wide { padding: 56px 48px; }
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 14px;
+  display: flex; align-items: center; gap: 12px;
+}
+.eyebrow::after { content:''; display:block; height:1px; width:36px; background:var(--gold); opacity:0.5; }
+
+.page-title {
+  font-family: var(--display);
+  font-size: clamp(2rem, 5vw, 3.8rem);
+  font-weight: 800;
+  line-height: 1.0;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  margin-bottom: 28px;
+}
+
+.page-title em {
+  color: var(--accent2);
+  font-style: normal;
+}
+
+.lead {
+  font-size: 1.05rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--muted);
+  max-width: 640px;
+  margin-bottom: 48px;
+}
+
+/* DIVIDER */
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+/* SECTION LABEL */
+.slabel {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 20px;
+}
+
+/* GRID UTILS */
+.g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.g3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1px; background: var(--border); border: 1px solid var(--border); }
+.g4 { display: grid; grid-template-columns: repeat(4,1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+
+.cell {
+  background: var(--surface);
+  padding: 28px 28px 32px;
+  transition: background 0.2s;
+}
+.cell:hover { background: #fdfaf5; }
+
+.cell-dark { background: var(--accent); color: white; }
+.cell-dark:hover { background: var(--accent2); }
+.cell-dark .cell-label { color: rgba(255,255,255,0.45); }
+.cell-dark p { color: rgba(255,255,255,0.7); }
+.cell-dark h3 { color: white; }
+
+.cell-label {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.cell h3 {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 10px;
+  color: var(--ink);
+}
+
+.cell p {
+  font-size: 0.88rem;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted);
+}
+
+.cell ul { list-style: none; }
+.cell ul li {
+  font-size: 0.87rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--muted);
+  padding-left: 14px;
+  position: relative;
+}
+.cell ul li::before { content: '→'; position: absolute; left: 0; color: var(--gold); font-size: 10px; top: 2px; }
+
+.accent-bar {
+  display: inline-block;
+  width: 3px;
+  background: var(--gold);
+  margin-right: 12px;
+  vertical-align: middle;
+  height: 1em;
+}
+
+/* ── PAGE 1: OVERVIEW ── */
+.header-band {
+  background: var(--accent);
+  padding: 56px 48px 48px;
+  color: white;
+}
+
+.header-band .eyebrow { color: var(--gold-light); }
+.header-band .eyebrow::after { background: var(--gold-light); }
+
+.header-band h1 {
+  font-family: var(--display);
+  font-size: clamp(2.4rem, 6vw, 5rem);
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: white;
+  margin-bottom: 8px;
+}
+
+.header-band h1 em {
+  color: var(--gold-light);
+  font-style: normal;
+}
+
+.header-meta {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: end;
+  gap: 24px;
+  margin-top: 40px;
+  padding-top: 32px;
+  border-top: 1px solid rgba(255,255,255,0.12);
+}
+
+.header-meta p {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.45);
+  line-height: 2;
+}
+
+.brands-row {
+  display: flex; flex-wrap: wrap; gap: 8px;
+}
+
+.brand-tag {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border: 1px solid rgba(255,255,255,0.2);
+  color: rgba(255,255,255,0.6);
+}
+
+.purpose-grid {
+  display: grid;
+  grid-template-columns: repeat(4,1fr);
+  gap: 1px;
+  background: var(--border);
+  border: 1px solid var(--border);
+  margin-bottom: 40px;
+}
+
+.purpose-card {
+  background: var(--surface);
+  padding: 28px 24px 32px;
+  transition: background 0.2s;
+  position: relative;
+}
+.purpose-card:hover { background: #fdfaf5; }
+
+.purpose-card .num {
+  font-family: var(--display);
+  font-size: 3rem;
+  font-weight: 800;
+  color: rgba(19,18,16,0.07);
+  line-height: 1;
+  margin-bottom: 10px;
+}
+
+.purpose-card h3 {
+  font-family: var(--display);
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin-bottom: 10px;
+  text-transform: uppercase;
+}
+
+.purpose-card p {
+  font-size: 0.85rem;
+  font-weight: 300;
+  line-height: 1.65;
+  color: var(--muted);
+}
+
+.purpose-card .corner-tag {
+  position: absolute;
+  top: 18px; right: 18px;
+  font-family: var(--mono);
+  font-size: 7px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+/* ── PAGE 2: AGENDA ── */
+.agenda-row {
+  position: relative;
+  margin-bottom: 3px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  overflow: hidden;
+  transition: border-color 0.25s;
+}
+.agenda-row:hover { border-color: var(--border-dark); }
+.agenda-row.is-break {
+  background: transparent;
+  border-style: dashed;
+}
+.agenda-row.is-break:hover { background: transparent; }
+.agenda-row.is-open { border-color: var(--accent); }
+
+/* HEADER ROW — always visible, clickable */
+.agenda-header {
+  display: grid;
+  grid-template-columns: 120px 80px 1fr auto 28px;
+  align-items: center;
+  gap: 0;
+  cursor: pointer;
+  padding: 0;
+  user-select: none;
+}
+.agenda-row.is-break .agenda-header { cursor: default; }
+
+.agenda-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 18px 16px;
+  border-right: 1px solid var(--border);
+  white-space: nowrap;
+  background: var(--surface2);
+  align-self: stretch;
+  display: flex; align-items: center;
+}
+.agenda-row.is-open .agenda-time { background: var(--accent); color: var(--gold-light); }
+
+.agenda-num {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  padding: 18px 14px;
+  border-right: 1px solid var(--border);
+  align-self: stretch;
+  display: flex; align-items: center;
+}
+
+.agenda-title-wrap { padding: 18px 20px; }
+
+.agenda-tag {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.agenda-title {
+  font-family: var(--display);
+  font-size: 1.0rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.agenda-row.is-break .agenda-title { color: var(--muted); font-weight: 400; font-style: italic; }
+
+.agenda-dur {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--muted);
+  padding: 18px 16px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.agenda-chevron {
+  padding: 18px 16px 18px 0;
+  color: var(--muted);
+  font-size: 11px;
+  transition: transform 0.25s;
+  display: flex; align-items: center; justify-content: center;
+}
+.agenda-row.is-open .agenda-chevron { transform: rotate(180deg); color: var(--accent); }
+.agenda-row.is-break .agenda-chevron { display: none; }
+
+/* DROPDOWN BODY */
+.agenda-body {
+  display: none;
+  border-top: 1px solid var(--border);
+  animation: dropDown 0.25s ease both;
+}
+.agenda-row.is-open .agenda-body { display: grid; grid-template-columns: 1fr 1fr 1fr; }
+
+@keyframes dropDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.agenda-body-col {
+  padding: 24px 24px 28px;
+  border-right: 1px solid var(--border);
+}
+.agenda-body-col:last-child { border-right: none; }
+
+.agenda-body-col h4 {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.agenda-body-col ul { list-style: none; }
+.agenda-body-col ul li {
+  font-size: 0.85rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--muted);
+  padding-left: 14px;
+  position: relative;
+}
+.agenda-body-col ul li::before { content: '→'; position: absolute; left: 0; color: var(--gold); font-size: 10px; top: 2px; }
+
+.agenda-output {
+  margin-top: 14px;
+  padding: 9px 13px;
+  background: rgba(196,137,58,0.08);
+  border-left: 2px solid var(--gold);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.04em;
+  color: var(--gold);
+  line-height: 1.5;
+}
+
+/* ── PAGE 3: EXERCISES ── */
+.exercise {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  margin-bottom: 3px;
+  overflow: hidden;
+}
+
+.ex-header {
+  padding: 24px 32px;
+  display: grid;
+  grid-template-columns: 60px 1fr auto;
+  gap: 20px;
+  align-items: center;
+  cursor: pointer;
+  transition: background 0.2s;
+  border-bottom: 1px solid transparent;
+}
+.ex-header:hover { background: var(--surface2); }
+.exercise.open .ex-header { border-bottom-color: var(--border); background: var(--surface2); }
+
+.ex-num {
+  font-family: var(--display);
+  font-size: 2.2rem;
+  font-weight: 800;
+  color: rgba(19,18,16,0.08);
+  line-height: 1;
+}
+
+.ex-meta .tag {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 5px;
+}
+
+.ex-meta h3 {
+  font-family: var(--display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.ex-time {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  text-align: right;
+}
+
+.ex-body {
+  display: none;
+  padding: 32px;
+  display: none;
+}
+
+.exercise.open .ex-body { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; }
+
+.ex-col h4 {
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--accent2);
+  margin-bottom: 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.ex-col ul { list-style: none; }
+.ex-col ul li {
+  font-size: 0.87rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--muted);
+  padding-left: 14px;
+  position: relative;
+}
+.ex-col ul li::before { content: '›'; position: absolute; left: 0; color: var(--gold); }
+
+.ex-col .note {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: rgba(45,99,71,0.06);
+  border-left: 2px solid var(--accent2);
+  font-size: 0.84rem;
+  font-style: italic;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── PAGE 4: CAPTURE ── */
+.capture-intro {
+  background: var(--accent);
+  color: white;
+  padding: 40px 48px;
+  margin-bottom: 0;
+}
+
+.capture-intro p {
+  font-size: 1rem;
+  font-weight: 300;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.65);
+  max-width: 680px;
+  margin-top: 12px;
+}
+
+.capture-intro h2 {
+  font-family: var(--display);
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: white;
+}
+
+.template-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.template-card {
+  background: var(--surface);
+  padding: 32px 32px 36px;
+}
+
+.template-card .t-num {
+  font-family: var(--display);
+  font-size: 3rem;
+  font-weight: 800;
+  color: rgba(19,18,16,0.06);
+  line-height: 1;
+  margin-bottom: 12px;
+}
+
+.template-card h3 {
+  font-family: var(--display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 10px;
+}
+
+.template-card .q-list { list-style: none; }
+.template-card .q-list li {
+  font-size: 0.88rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: var(--muted);
+  padding: 8px 0 8px 16px;
+  position: relative;
+  border-bottom: 1px dashed var(--border);
+}
+.template-card .q-list li:last-child { border-bottom: none; }
+.template-card .q-list li::before {
+  content: 'Q';
+  position: absolute;
+  left: 0;
+  font-family: var(--mono);
+  font-size: 8px;
+  color: var(--gold);
+  top: 10px;
+}
+
+/* ── PAGE 5: OUTPUT ── */
+.output-intro {
+  background: var(--ink);
+  color: white;
+  padding: 48px 48px;
+}
+
+.output-intro h2 {
+  font-family: var(--display);
+  font-size: clamp(1.8rem, 4vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: white;
+  margin-bottom: 16px;
+}
+
+.output-intro h2 em { color: var(--gold-light); font-style: normal; }
+
+.output-intro p {
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.5);
+  max-width: 640px;
+}
+
+.output-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+  background: var(--border);
+  border: 1px solid var(--border);
+}
+
+.output-card {
+  background: var(--surface);
+  padding: 32px 32px 36px;
+}
+
+.output-card .badge {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  margin-bottom: 14px;
+}
+
+.output-card h3 {
+  font-family: var(--display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin-bottom: 12px;
+}
+
+.output-card p {
+  font-size: 0.87rem;
+  font-weight: 300;
+  line-height: 1.7;
+  color: var(--muted);
+  margin-bottom: 14px;
+}
+
+.output-card ul { list-style: none; }
+.output-card ul li {
+  font-size: 0.86rem;
+  font-weight: 300;
+  line-height: 1.8;
+  color: var(--muted);
+  padding-left: 14px;
+  position: relative;
+}
+.output-card ul li::before { content: '✓'; position: absolute; left: 0; color: var(--accent2); font-size: 10px; }
+
+.strategic-note {
+  margin-top: 40px;
+  padding: 36px 40px;
+  background: var(--accent);
+  color: white;
+  border: none;
+}
+
+.strategic-note h3 {
+  font-family: var(--display);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--gold-light);
+  margin-bottom: 16px;
+  letter-spacing: 0.02em;
+}
+
+.strategic-note p {
+  font-size: 0.95rem;
+  font-weight: 300;
+  line-height: 1.75;
+  color: rgba(255,255,255,0.65);
+  max-width: 680px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 860px) {
+  .wrap, .wrap-wide { padding: 36px 24px; }
+  .g2, .g3, .g4, .purpose-grid, .template-grid, .output-grid { grid-template-columns: 1fr; }
+  .timeline { padding-left: 0; }
+  .timeline::before { display: none; }
+  .t-time { position: static; margin-bottom: 4px; display: block; }
+  .t-block::before { display: none; }
+  .t-inner { grid-template-columns: 1fr; }
+  .exercise.open .ex-body { grid-template-columns: 1fr; }
+  .ex-header { grid-template-columns: 48px 1fr; }
+  .ex-time { display: none; }
+  .header-band { padding: 40px 24px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="nav">
+  <button class="nav-tab active" onclick="show('overview')">01 · Overview</button>
+  <button class="nav-tab" onclick="show('agenda')">02 · Full Agenda</button>
+  <button class="nav-tab" onclick="show('exercises')">03 · Exercises</button>
+  <button class="nav-tab studio-tab" onclick="show('studio')">04 · Workshop Studio</button>
+  <button class="fs-btn" onclick="openFS('overview')">
+    <svg viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    Present
+  </button>
+</nav>
+
+<!-- FULLSCREEN OVERLAY -->
+<div class="fs-overlay" id="fsOverlay">
+  <div class="fs-nav">
+    <button class="fs-tab active" onclick="fsShow('overview', this)">01 · Overview</button>
+    <button class="fs-tab" onclick="fsShow('agenda', this)">02 · Agenda</button>
+    <button class="fs-tab" onclick="fsShow('exercises', this)">03 · Exercises</button>
+    <span class="fs-indicator" id="fsIndicator">AI Design Tools Discovery Day · Bestseller A/S</span>
+    <button class="fs-close" onclick="closeFS()">
+      <svg style="width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:2;" viewBox="0 0 24 24"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+      Exit
+    </button>
+  </div>
+  <div class="fs-content" id="fsContent">
+    <!-- content injected by JS -->
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ PAGE 1: OVERVIEW -->
+<div id="overview" class="page active">
+
+  <div class="header-band">
+    <p class="eyebrow">Cross-Brand Workshop · Bestseller A/S</p>
+    <h1>AI DESIGN TOOLS<br><em>DISCOVERY DAY</em></h1>
+    <div class="header-meta">
+      <div>
+        <p>Thursday · Full Day · 10–20 Participants</p>
+        <p>Designers + Tech/IT · Multi-Brand</p>
+        <p>Facilitated by: AI Specialist &amp; Designer, OBJECT</p>
+      </div>
+      <div class="brands-row">
+        <span class="brand-tag">OBJECT</span>
+        <span class="brand-tag">VERO MODA</span>
+        <span class="brand-tag">SELECTED</span>
+        <span class="brand-tag">VILA</span>
+        <span class="brand-tag">YAS</span>
+        <span class="brand-tag">NAME IT</span>
+        <span class="brand-tag">HYPE DROP</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="wrap">
+
+    <p class="slabel" style="margin-bottom:24px;">Workshop Purpose — Four Layers</p>
+    <div class="purpose-grid" style="margin-bottom:48px;">
+      <div class="purpose-card">
+        <span class="corner-tag">Layer 1</span>
+        <p class="num">01</p>
+        <h3>Discovery</h3>
+        <p>Surface real user needs, workflow pain points, and AI use cases across brands. This is primary research — not a demo.</p>
+      </div>
+      <div class="purpose-card">
+        <span class="corner-tag">Layer 2</span>
+        <p class="num">02</p>
+        <h3>Alignment</h3>
+        <p>Identify shared needs across brands. Where are the patterns? What does Bestseller need — not just OBJECT?</p>
+      </div>
+      <div class="purpose-card">
+        <span class="corner-tag">Layer 3</span>
+        <p class="num">03</p>
+        <h3>Community</h3>
+        <p>This is the founding session of a cross-brand AI design knowledge network. The relationships built today outlast the day.</p>
+      </div>
+      <div class="purpose-card">
+        <span class="corner-tag">Layer 4</span>
+        <p class="num">04</p>
+        <h3>Direction</h3>
+        <p>Leave today with clear, prioritised recommendations on where AI fits into our design workflows — across all brands.</p>
+      </div>
+    </div>
+
+    <hr>
+
+    <p class="slabel">How We Work Today</p>
+    <div class="g3">
+      <div class="cell">
+        <p class="cell-label">Principle 1</p>
+        <h3>Wide Before Deep</h3>
+        <p>Morning is open exploration. Every voice matters. There are no wrong answers — volume of input creates clarity.</p>
+      </div>
+      <div class="cell">
+        <p class="cell-label">Principle 2</p>
+        <h3>Cross-Brand Thinking</h3>
+        <p>We are not representing individual brands today. We are looking for what is shared — the patterns that belong to all of us.</p>
+      </div>
+      <div class="cell">
+        <p class="cell-label">Principle 3</p>
+        <h3>Build, Don't Just Talk</h3>
+        <p>Every session produces a tangible output. By end of day we will have a direction — not just a conversation.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ PAGE 2: AGENDA -->
+<div id="agenda" class="page">
+  <div class="wrap">
+
+    <p class="eyebrow">Click any session to expand</p>
+    <h1 class="page-title">Thursday<br><em>Agenda</em></h1>
+    <p class="lead">Your confirmed schedule — exact timings as shared with participants. Click each session to see the full activity detail, purpose, and expected output.</p>
+
+    <!-- ── 09:25 Brand Introductions ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">09:25 – 09:55</span>
+        <span class="agenda-num">Intro</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Open · 30 min</p>
+          <p class="agenda-title">Brand Introductions</p>
+        </div>
+        <span class="agenda-dur">30 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Establish who is in the room and what they represent</li>
+            <li>Build psychological safety before any group work begins</li>
+            <li>Surface the range of experience with AI across brands</li>
+            <li>Set a collaborative, not competitive, tone between brands</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Each person: name, brand, role, one sentence on their current relationship with AI</li>
+            <li>Optional warm-up: one word for how AI feels to them right now</li>
+            <li>Note reactions and energy in the room — these shape the afternoon</li>
+            <li>Introduce the day's four goals: Discovery · Alignment · Community · Direction</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Output + Transition</h4>
+          <ul>
+            <li>Room knows each other — names, brands, starting points</li>
+            <li>Emotional baseline of the group is visible</li>
+            <li>Transition: "Now we know who is here — let's understand why AI matters for all of us"</li>
+          </ul>
+          <div class="agenda-output">Output: Connected room, shared starting point</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 09:55 Defining the Why ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">09:55 – 10:25</span>
+        <span class="agenda-num">01</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Session 1 · 30 min</p>
+          <p class="agenda-title">Defining the "Why" Behind AI</p>
+        </div>
+        <span class="agenda-dur">30 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Build shared understanding of why AI matters — not just what it does</li>
+            <li>Ground the conversation in real business and design challenges</li>
+            <li>Surface the tension between creative fear and strategic necessity</li>
+            <li>Align the room on a common frame before diving into specifics</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Short facilitated presentation: the case for AI in fashion design workflow</li>
+            <li>Share what OBJECT has already piloted — real examples, real results</li>
+            <li>Discussion prompt: "What would change in your work if AI removed your biggest time drain?"</li>
+            <li>Capture key themes on a visible board — these seed Session 2</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Output + Transition</h4>
+          <ul>
+            <li>Room has a shared "why" — not just a tool question but a strategic one</li>
+            <li>First themes around pain and opportunity are visible on the board</li>
+            <li>Transition: "We've set the 'why' — now let's get specific. Where exactly does the work break?"</li>
+          </ul>
+          <div class="agenda-output">Output: Shared strategic frame. Room primed for deep discovery.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BREAK ── -->
+    <div class="agenda-row is-break">
+      <div class="agenda-header">
+        <span class="agenda-time">10:25 – 10:35</span>
+        <span class="agenda-num" style="color:var(--muted);">—</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Break · 10 min</p>
+          <p class="agenda-title">Break</p>
+        </div>
+        <span class="agenda-dur">10 min</span>
+      </div>
+    </div>
+
+    <!-- ── 10:35 Pain Points ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">10:35 – 11:30</span>
+        <span class="agenda-num">02</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Session 2 · 55 min</p>
+          <p class="agenda-title">Identifying Key Pain Points</p>
+        </div>
+        <span class="agenda-dur">55 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Surface the real, specific workflow bottlenecks across all brands</li>
+            <li>Find which pain points are brand-specific vs. cross-brand patterns</li>
+            <li>Build the evidence base: designers naming their own problems in their own words</li>
+            <li>This is primary research — not a presentation, a discovery</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Individual: 8 min silent writing — one pain point per post-it note</li>
+            <li>Prompts: "Where do you waste time?" / "What's always manual that shouldn't be?" / "Where do decisions stall?"</li>
+            <li>Mixed groups of 3–4: share, cluster, name the clusters</li>
+            <li>Groups rank their top 3 by frequency + impact</li>
+            <li>Full room share-out: each group presents their top patterns</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Output + Transition</h4>
+          <ul>
+            <li>Master pain point map on the wall — visible to the whole room</li>
+            <li>Cross-brand patterns named and labelled</li>
+            <li>Brand-specific pains noted separately</li>
+            <li>Transition into lunch: "We'll continue mapping solutions after the break — keep your pain points visible"</li>
+          </ul>
+          <div class="agenda-output">Output: Master pain map — clustered, ranked, cross-brand</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LUNCH ── -->
+    <div class="agenda-row is-break">
+      <div class="agenda-header">
+        <span class="agenda-time">11:30 – 12:15</span>
+        <span class="agenda-num" style="color:var(--muted);">—</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Lunch Break · 45 min</p>
+          <p class="agenda-title">Lunch Break</p>
+        </div>
+        <span class="agenda-dur">45 min</span>
+      </div>
+    </div>
+
+    <!-- ── 12:15 Pain Points Continued ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">12:15 – 13:00</span>
+        <span class="agenda-num">02</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Session 2 Continued · 45 min</p>
+          <p class="agenda-title">Identifying Key Pain Points — Continued</p>
+        </div>
+        <span class="agenda-dur">45 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Deepen and validate the morning's pain point map</li>
+            <li>Bring in afternoon energy — new perspectives after lunch</li>
+            <li>Allow tech/IT participants to add the infrastructure and system layer</li>
+            <li>Finalise the master map before moving to solutions</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Recap the morning map — walk the room through what was captured</li>
+            <li>Open additions: what's missing? What wasn't said before lunch?</li>
+            <li>Tech/IT input round: "From your side — where do you see the design process breaking down?"</li>
+            <li>Dot vote to confirm top 5–6 pain points that the afternoon will address</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Output + Transition</h4>
+          <ul>
+            <li>Final, agreed pain point map — validated by the full room</li>
+            <li>Top 5–6 pain points selected by vote — these drive Session 3</li>
+            <li>Transition: "Now we know what's broken — let's explore what AI can actually do about it"</li>
+          </ul>
+          <div class="agenda-output">Output: Finalised, voted pain point map — ready for solution mapping</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 13:00 Exploring AI Tool & Workflow Solutions ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">13:00 – 13:45</span>
+        <span class="agenda-num">03</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Session 3 · 45 min</p>
+          <p class="agenda-title">Exploring AI Tool & Workflow Solutions</p>
+        </div>
+        <span class="agenda-dur">45 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Move from problem to possibility — generative, not evaluative</li>
+            <li>Map AI tools and workflow changes to specific pain points</li>
+            <li>Surface what people already know, are curious about, or have heard of</li>
+            <li>Tech/IT and designers working side by side — this is the key collaboration moment</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Groups (mixed designer + tech): take 1–2 pain points each from the finalised map</li>
+            <li>For each: "What AI tool or workflow change could solve this?" — generate freely, no filtering</li>
+            <li>Complete Use Case Cards: Pain / AI Function / Output / Who Benefits</li>
+            <li>Gallery walk: all cards on wall, reactions added with stickers</li>
+            <li>Brief debrief: what surprised you? What feels most real?</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Output + Transition</h4>
+          <ul>
+            <li>Use Case Cards — one per solution idea, raw and unfiltered</li>
+            <li>Wall covered with possibility — energy in the room should be high</li>
+            <li>Transition: "We have the ideas — now we need to decide what to do first"</li>
+          </ul>
+          <div class="agenda-output">Output: Use Case Cards — cross-brand AI solutions mapped to real pain</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── BREAK ── -->
+    <div class="agenda-row is-break">
+      <div class="agenda-header">
+        <span class="agenda-time">13:45 – 13:55</span>
+        <span class="agenda-num" style="color:var(--muted);">—</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Break · 10 min</p>
+          <p class="agenda-title">Break</p>
+        </div>
+        <span class="agenda-dur">10 min</span>
+      </div>
+    </div>
+
+    <!-- ── 13:55 Drafting Cross-Brand AI Tool Direction ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">13:55 – 14:30</span>
+        <span class="agenda-num">04</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Session 4 · 35 min</p>
+          <p class="agenda-title">Drafting Cross-Brand AI Tool Direction</p>
+        </div>
+        <span class="agenda-dur">35 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Converge — move from many ideas to a prioritised direction</li>
+            <li>Produce a room-validated recommendation for tech leadership</li>
+            <li>Give every voice a stake in the outcome through structured voting</li>
+            <li>Distinguish Quick Wins from Strategic Bets</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Dot voting on Use Case Cards: 5 dots per person, placed silently</li>
+            <li>Top 5–7 cards identified by vote count</li>
+            <li>Impact × Readiness matrix: plot each top use case together (designers rate impact, tech rates readiness)</li>
+            <li>Label quadrants: Quick Wins · Strategic Bets · Explore Later · Park</li>
+            <li>Room agrees on top 3 recommendations as a group</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Output + Transition</h4>
+          <ul>
+            <li>Prioritised use case matrix — room-validated</li>
+            <li>Top 3 AI tool / workflow recommendations agreed</li>
+            <li>Quick Wins vs. Strategic Bets clearly separated</li>
+            <li>Transition: "We have a direction. Now — how do we keep this moving as a group?"</li>
+          </ul>
+          <div class="agenda-output">Output: Cross-brand AI direction — ready for tech leadership brief</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── 14:30 Next Step / Knowledge Sharing ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">14:30 – 14:45</span>
+        <span class="agenda-num">05</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Session 5 · 15 min</p>
+          <p class="agenda-title">Next Step / Cross-Brand Future Knowledge Sharing</p>
+        </div>
+        <span class="agenda-dur">15 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Found the cross-brand AI design community — give it a name and a structure</li>
+            <li>Ensure today does not end as an event but begins as an ongoing network</li>
+            <li>Assign brand representatives and confirm a next session date</li>
+            <li>Position this community as the intelligence layer across Bestseller brands</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Propose community name — open to suggestions, e.g. "Bestseller AI Design Network"</li>
+            <li>Ask: "Who wants to be the AI point-of-contact for their brand?"</li>
+            <li>Agree format: monthly online session + shared channel for tools and learnings</li>
+            <li>Set next meeting date before anyone leaves the room</li>
+            <li>Findings from today will be compiled and shared as a summary within 10 days</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Output + Transition</h4>
+          <ul>
+            <li>Community named and founded — not a project, a network</li>
+            <li>Brand reps identified (voluntary)</li>
+            <li>Next session date confirmed in the room</li>
+            <li>Transition: "One last thing before we close — I want to hear one thing from each of you"</li>
+          </ul>
+          <div class="agenda-output">Output: Named community, reps confirmed, next date set</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Wrap-up ── -->
+    <div class="agenda-row" onclick="toggleAgenda(this)">
+      <div class="agenda-header">
+        <span class="agenda-time">14:45 – 15:00</span>
+        <span class="agenda-num">End</span>
+        <div class="agenda-title-wrap">
+          <p class="agenda-tag">Close · 15 min</p>
+          <p class="agenda-title">Wrap-Up</p>
+        </div>
+        <span class="agenda-dur">15 min</span>
+        <span class="agenda-chevron">▾</span>
+      </div>
+      <div class="agenda-body">
+        <div class="agenda-body-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Name what was built today — make the work feel real and significant</li>
+            <li>Give every person a voice in the close</li>
+            <li>Confirm next steps clearly — no ambiguity about what happens after today</li>
+            <li>Leave the room with energy, not fatigue</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>Activity</h4>
+          <ul>
+            <li>Recap: pain map · use cases · direction · community — what was built in one day</li>
+            <li>Round the room: one thing each person is taking back to their brand</li>
+            <li>Close with confirmed next steps for the group</li>
+            <li>Thank the room genuinely — this community starts now</li>
+          </ul>
+        </div>
+        <div class="agenda-body-col">
+          <h4>What You Leave With</h4>
+          <ul>
+            <li>A shared pain map representing all brands in the room</li>
+            <li>A prioritised set of AI use cases — validated by this group</li>
+            <li>A named community and a next meeting date</li>
+            <li>One concrete thing to take back to your team</li>
+          </ul>
+          <div class="agenda-output">Output: Clarity, ownership, and a defined next step</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════ PAGE 3: EXERCISES -->
+<div id="exercises" class="page">
+  <div class="wrap">
+
+    <p class="eyebrow">Session Activities</p>
+    <h1 class="page-title">Session<br><em>Activities</em></h1>
+    <p class="lead">Four activities across the day. Each is designed to produce a concrete output. Use the dropdowns to see what each session involves and what you'll be working on.</p>
+
+    <!-- EX 1 -->
+    <div class="exercise open">
+      <div class="ex-header" onclick="toggleEx(this)">
+        <p class="ex-num">01</p>
+        <div class="ex-meta">
+          <p class="tag">Phase 03 · Pain Mapping</p>
+          <h3>Where Does Your Workflow Break?</h3>
+        </div>
+        <p class="ex-time">75 min · Groups of 3–4</p>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <h4>Setup</h4>
+          <ul>
+            <li>Post-it notes + large paper per group</li>
+            <li>Groups: mix brands, not same-brand clusters</li>
+            <li>Timer visible to all</li>
+            <li>One wall per group for output</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Steps</h4>
+          <ul>
+            <li>Individual: 8 mins silent writing — one pain per note</li>
+            <li>Group share-out: each person reads their notes aloud</li>
+            <li>Group clusters: group similar pains together, name the clusters</li>
+            <li>Group ranks top 3 by impact + frequency</li>
+            <li>Full room: each group presents, you cluster on master board</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Discussion Prompts</h4>
+          <ul>
+            <li>"Where do you waste the most time in a typical design week?"</li>
+            <li>"What do you do manually that feels like it shouldn't be manual?"</li>
+            <li>"Where do decisions stall or get delayed?"</li>
+            <li>"What do you repeat every season that never changes?"</li>
+            <li>"Where does communication break between design and production?"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- EX 2 -->
+    <div class="exercise">
+      <div class="ex-header" onclick="toggleEx(this)">
+        <p class="ex-num">02</p>
+        <div class="ex-meta">
+          <p class="tag">Phase 04 · Use Case Generation</p>
+          <h3>Use Case Cards</h3>
+        </div>
+        <p class="ex-time">75 min · Groups of 3–4</p>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <h4>Card Format</h4>
+          <ul>
+            <li><strong>Pain:</strong> What problem does this solve?</li>
+            <li><strong>AI Function:</strong> What does the AI actually do?</li>
+            <li><strong>Output:</strong> What does the designer receive?</li>
+            <li><strong>Who Benefits:</strong> Which roles, which brands?</li>
+            <li><strong>Current Workaround:</strong> How is this done today?</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Steps</h4>
+          <ul>
+            <li>Each group takes 2 pain points from the master map</li>
+            <li>Generate as many use cases as possible — no filtering (15 min)</li>
+            <li>Select the 2 strongest to complete as full cards (20 min)</li>
+            <li>Gallery walk: all cards on wall, everyone reads (10 min)</li>
+            <li>Add reaction stickers: star = want this, question mark = unclear</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Discussion Prompts</h4>
+          <ul>
+            <li>"If AI removed the most repetitive task in your design process — what would you use that time for instead?"</li>
+            <li>"What would a 10x faster version of this step look like?"</li>
+            <li>"What information do you always have to search for manually?"</li>
+            <li>"What do you explain to suppliers or stakeholders repeatedly?"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- EX 3 -->
+    <div class="exercise">
+      <div class="ex-header" onclick="toggleEx(this)">
+        <p class="ex-num">03</p>
+        <div class="ex-meta">
+          <p class="tag">Phase 05 · Prioritization</p>
+          <h3>Impact × Readiness Matrix</h3>
+        </div>
+        <p class="ex-time">75 min · Full Room</p>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <h4>Setup</h4>
+          <ul>
+            <li>Large 2×2 matrix on wall: X = Readiness, Y = Impact</li>
+            <li>All use case cards from Phase 04 ready to place</li>
+            <li>Dot stickers for voting (5 per person)</li>
+            <li>Designers and tech/IT must discuss together before placing</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Steps</h4>
+          <ul>
+            <li>Dot vote first — 5 mins, no discussion</li>
+            <li>Top 7–8 use cases identified by vote count</li>
+            <li>Full group: place each on the matrix together (tech + design discuss)</li>
+            <li>Name the quadrants: Quick Wins / Strategic Bets / Explore Later / Drop</li>
+            <li>Agree on top 3–4 recommendations as a room</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Expected Quadrant Results</h4>
+          <ul>
+            <li><strong>Quick Wins:</strong> image generation for briefing, AI copy for product descriptions</li>
+            <li><strong>Strategic Bets:</strong> sample-free digital approval, AI trend integration</li>
+            <li><strong>Explore Later:</strong> full generative design, supplier AI integration</li>
+            <li><strong>Drop:</strong> anything requiring data infrastructure not yet in place</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- EX 4 -->
+    <div class="exercise">
+      <div class="ex-header" onclick="toggleEx(this)">
+        <p class="ex-num">04</p>
+        <div class="ex-meta">
+          <p class="tag">Phase 06 · Community</p>
+          <h3>Building the Network</h3>
+        </div>
+        <p class="ex-time">45 min · Full Room</p>
+      </div>
+      <div class="ex-body">
+        <div class="ex-col">
+          <h4>Purpose</h4>
+          <ul>
+            <li>Give the group an identity and a reason to continue</li>
+            <li>Establish lightweight governance (no bureaucracy)</li>
+            <li>Make the next meeting inevitable, not optional</li>
+            <li>Position you as the central node — not the gatekeeper</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Questions to Facilitate</h4>
+          <ul>
+            <li>"What should this group be called?"</li>
+            <li>"How often should we meet? In what format?"</li>
+            <li>"What should we share between sessions?"</li>
+            <li>"Who wants to be the point of contact for their brand?"</li>
+            <li>"What's the one thing that would make this community worth showing up for?"</li>
+          </ul>
+        </div>
+        <div class="ex-col">
+          <h4>Close With</h4>
+          <ul>
+            <li>Name confirmed and written on the wall</li>
+            <li>Brand representatives noted (voluntary)</li>
+            <li>Format agreed: monthly / bi-monthly</li>
+            <li>Next session: date proposed before people leave</li>
+            <li>You: "I will send a summary + the tech recommendation brief within [X] days"</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+
+<script>
+// ── NORMAL TAB NAVIGATION ──
+function show(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById(pageId).classList.add('active');
+  event.target.classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ── FULLSCREEN MODE ──
+const pageLabels = {
+  overview:  'Overview — Day Purpose & Structure',
+  agenda:    'Agenda — Session Timings',
+  exercises: 'Exercises — Facilitation Playbook',
+
+};
+
+function openFS(startPage) {
+  const overlay = document.getElementById('fsOverlay');
+  overlay.classList.add('active');
+  document.body.style.overflow = 'hidden';
+  // try native fullscreen
+  if (document.documentElement.requestFullscreen) {
+    document.documentElement.requestFullscreen().catch(() => {});
+  }
+  fsShow(startPage, overlay.querySelector('.fs-tab'));
+}
+
+function closeFS() {
+  document.getElementById('fsOverlay').classList.remove('active');
+  document.body.style.overflow = '';
+  if (document.exitFullscreen && document.fullscreenElement) {
+    document.exitFullscreen().catch(() => {});
+  }
+}
+
+function fsShow(pageId, btn) {
+  // clone the page content into fs-content
+  const source = document.getElementById(pageId);
+  const target = document.getElementById('fsContent');
+  target.innerHTML = source.outerHTML;
+  // make it visible
+  target.querySelector('.page').style.display = 'block';
+  // re-wire agenda dropdowns inside cloned content
+  target.querySelectorAll('.agenda-row').forEach(row => {
+    if (!row.classList.contains('is-break')) {
+      row.onclick = () => toggleAgendaEl(row);
+    }
+  });
+  // re-wire exercise toggles
+  target.querySelectorAll('.ex-header').forEach(h => {
+    h.onclick = () => toggleExEl(h);
+  });
+  // update nav
+  document.querySelectorAll('.fs-tab').forEach(t => t.classList.remove('active'));
+  // find the matching tab
+  document.querySelectorAll('.fs-tab').forEach(t => {
+    if (t.getAttribute('onclick') && t.getAttribute('onclick').includes(pageId)) {
+      t.classList.add('active');
+    }
+  });
+  // update indicator
+  document.getElementById('fsIndicator').textContent = pageLabels[pageId] || '';
+  target.scrollTop = 0;
+}
+
+function toggleAgendaEl(row) {
+  if (row.classList.contains('is-break')) return;
+  const isOpen = row.classList.contains('is-open');
+  row.closest('.fs-content').querySelectorAll('.agenda-row').forEach(r => r.classList.remove('is-open'));
+  if (!isOpen) row.classList.add('is-open');
+}
+
+function toggleExEl(header) {
+  const ex = header.parentElement;
+  const isOpen = ex.classList.contains('open');
+  header.closest('.fs-content').querySelectorAll('.exercise').forEach(e => e.classList.remove('open'));
+  if (!isOpen) ex.classList.add('open');
+}
+
+// ── AGENDA DROPDOWNS (normal mode) ──
+function toggleAgenda(row) {
+  if (row.classList.contains('is-break')) return;
+  const isOpen = row.classList.contains('is-open');
+  document.querySelectorAll('.agenda-row').forEach(r => r.classList.remove('is-open'));
+  if (!isOpen) row.classList.add('is-open');
+}
+
+// ── EXERCISE TOGGLES (normal mode) ──
+function toggleEx(header) {
+  const ex = header.parentElement;
+  const isOpen = ex.classList.contains('open');
+  document.querySelectorAll('.exercise').forEach(e => e.classList.remove('open'));
+  if (!isOpen) ex.classList.add('open');
+}
+
+// ESC to exit fullscreen
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeFS();
+});
+</script>
+
+<!-- ═══════════════════════════════════ WORKSHOP STUDIO PAGE -->
+<div id="studio" class="page">
+<style>
+/* ── STUDIO STYLES ── */
+.studio-shell { background: var(--bg); min-height: 100vh; }
+
+.studio-header {
+  background: var(--accent);
+  padding: 32px 48px 28px;
+  display: flex; align-items: center; gap: 32px;
+  border-bottom: 2px solid var(--gold);
+}
+.studio-header h2 {
+  font-family: var(--display);
+  font-size: 1.6rem; font-weight: 800;
+  color: var(--white); letter-spacing: -0.01em;
+  flex: 1;
+}
+.studio-header h2 span { color: var(--gold-light); }
+
+.group-selector { display: flex; gap: 8px; align-items: center; }
+.group-selector label {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: rgba(255,255,255,0.5); margin-right: 4px;
+}
+.g-btn {
+  width: 44px; height: 44px;
+  font-family: var(--display); font-size: 1.1rem; font-weight: 800;
+  border: 2px solid rgba(255,255,255,0.2);
+  background: transparent; color: rgba(255,255,255,0.5);
+  cursor: pointer; transition: all 0.2s;
+  display: flex; align-items: center; justify-content: center;
+}
+.g-btn:hover { border-color: var(--gold); color: var(--gold); }
+.g-btn.active { background: var(--gold); border-color: var(--gold); color: var(--accent); }
+
+.studio-boards-nav {
+  display: flex; gap: 0;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.board-tab {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--muted); padding: 13px 22px;
+  cursor: pointer; border: none; background: none;
+  border-right: 1px solid var(--border); white-space: nowrap;
+  transition: all 0.2s;
+}
+.board-tab:hover { background: var(--surface); color: var(--ink); }
+.board-tab.active { background: var(--surface); color: var(--accent); border-bottom: 2px solid var(--gold); }
+
+.studio-board-area { padding: 32px 48px 48px; }
+
+/* No-group selected state */
+.studio-prompt {
+  text-align: center; padding: 80px 40px;
+}
+.studio-prompt .big-num {
+  font-family: var(--display); font-size: 8rem; font-weight: 800;
+  color: rgba(19,18,16,0.05); line-height: 1;
+}
+.studio-prompt p {
+  font-family: var(--mono); font-size: 10px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--muted); margin-top: -20px;
+}
+
+/* Board cards */
+.s-board { display: none; animation: fadeIn 0.3s ease both; }
+.s-board.active { display: block; }
+
+.s-board-header {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+.s-board-header h3 {
+  font-family: var(--display); font-size: 1.4rem;
+  font-weight: 800; color: var(--accent); letter-spacing: -0.01em;
+}
+.s-board-header .meta {
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.15em; color: var(--muted);
+  text-transform: uppercase;
+}
+
+.s-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+.s-section-head {
+  background: var(--accent);
+  padding: 12px 20px;
+  display: flex; align-items: center; gap: 12px;
+}
+.s-section-head .s-num {
+  font-family: var(--display); font-size: 1.6rem;
+  font-weight: 800; color: rgba(255,255,255,0.15); line-height: 1;
+}
+.s-section-head .s-title {
+  font-family: var(--display); font-size: 0.95rem;
+  font-weight: 700; color: var(--white); letter-spacing: 0.02em;
+  text-transform: uppercase; flex: 1;
+}
+.s-section-head .s-tag {
+  font-family: var(--mono); font-size: 8px;
+  letter-spacing: 0.15em; color: var(--gold-light);
+  text-transform: uppercase;
+}
+
+.s-fields { padding: 20px 20px 24px; display: grid; gap: 16px; }
+.s-fields.cols2 { grid-template-columns: 1fr 1fr; }
+.s-fields.cols3 { grid-template-columns: 1fr 1fr 1fr; }
+
+.s-field label {
+  display: block;
+  font-family: var(--mono); font-size: 8px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent2); margin-bottom: 6px;
+}
+.s-field .hint {
+  font-family: var(--body); font-size: 0.8rem;
+  font-style: italic; color: var(--muted);
+  margin-bottom: 6px; display: block;
+}
+.s-field textarea, .s-field input[type="text"] {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  padding: 10px 12px;
+  font-family: var(--body); font-size: 0.9rem;
+  color: var(--ink); resize: vertical;
+  transition: border-color 0.2s;
+  outline: none;
+}
+.s-field textarea:focus, .s-field input:focus {
+  border-color: var(--accent2);
+  border-left-color: var(--accent);
+  background: var(--surface);
+}
+.s-field textarea { min-height: 72px; }
+
+/* Pain point tag grid */
+.pain-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.pain-tag {
+  font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em;
+  text-transform: uppercase; padding: 5px 10px;
+  border: 1px solid var(--border); background: var(--surface2);
+  cursor: pointer; transition: all 0.15s; color: var(--muted);
+}
+.pain-tag.selected { background: var(--accent); border-color: var(--accent); color: white; }
+
+/* Matrix visual */
+.matrix-wrap {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+  background: var(--border); border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+.matrix-q {
+  padding: 16px 18px 20px;
+  background: var(--surface);
+}
+.matrix-q.tl { background: #f0f7f3; }
+.matrix-q.tr { background: var(--accent); }
+.matrix-q.tr label { color: var(--gold-light) !important; }
+.matrix-q.tr textarea { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.2); border-left-color: var(--gold); color: white; }
+.matrix-q.tr textarea::placeholder { color: rgba(255,255,255,0.3); }
+.matrix-q.bl { background: #faf7f2; }
+.matrix-q.br { background: #fff8f0; }
+.matrix-q label {
+  font-family: var(--mono); font-size: 8px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  color: var(--accent2); margin-bottom: 4px; display: block;
+}
+.matrix-q .q-hint {
+  font-family: var(--body); font-size: 0.78rem;
+  font-style: italic; color: var(--muted); margin-bottom: 8px; display: block;
+}
+.matrix-q textarea {
+  width: 100%; min-height: 72px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--gold);
+  padding: 8px 10px;
+  font-family: var(--body); font-size: 0.88rem;
+  color: var(--ink); resize: vertical; outline: none;
+}
+.matrix-q textarea:focus { border-left-color: var(--accent); }
+
+/* Download button */
+.dl-btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 9px;
+  letter-spacing: 0.2em; text-transform: uppercase;
+  padding: 12px 24px;
+  background: var(--accent); color: var(--gold-light);
+  border: none; cursor: pointer;
+  transition: background 0.2s;
+}
+.dl-btn:hover { background: var(--accent2); }
+.dl-btn svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+.save-indicator {
+  font-family: var(--mono); font-size: 8px;
+  letter-spacing: 0.15em; text-transform: uppercase;
+  color: var(--accent2); opacity: 0;
+  transition: opacity 0.4s;
+  padding: 12px 16px;
+}
+.save-indicator.show { opacity: 1; }
+
+.board-actions {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 0 0;
+  border-top: 1px solid var(--border);
+  margin-top: 8px;
+}
+</style>
+
+<div class="studio-shell">
+  <!-- HEADER -->
+  <div class="studio-header">
+    <h2>Workshop <span>Studio</span></h2>
+    <div class="group-selector">
+      <label>Select Group:</label>
+      <button class="g-btn" onclick="selectGroup(1)">1</button>
+      <button class="g-btn" onclick="selectGroup(2)">2</button>
+      <button class="g-btn" onclick="selectGroup(3)">3</button>
+      <button class="g-btn" onclick="selectGroup(4)">4</button>
+    </div>
+  </div>
+
+  <!-- BOARD TABS -->
+  <div class="studio-boards-nav" id="studioBoardsNav" style="display:none;">
+    <button class="board-tab active" onclick="selectBoard('b1')">Board 1 · Defining the Why</button>
+    <button class="board-tab" onclick="selectBoard('b2')">Board 2 · Pain Points</button>
+    <button class="board-tab" onclick="selectBoard('b3')">Board 3 · Use Case Cards</button>
+    <button class="board-tab" onclick="selectBoard('b4')">Board 4 · AI Direction</button>
+  </div>
+
+  <div class="studio-board-area" id="studioBoardArea">
+    <!-- No group selected -->
+    <div class="studio-prompt" id="studioPrompt">
+      <div class="big-num">↑</div>
+      <p>Select your group number above to begin</p>
+    </div>
+
+    <!-- BOARD 1 — Defining the Why -->
+    <div class="s-board" id="board-b1">
+      <div class="s-board-header">
+        <div>
+          <h3>Board 1 · Defining the "Why" Behind AI</h3>
+          <p class="meta">Session 1 · 09:55 – 10:25 · Group <span class="group-label">—</span></p>
+        </div>
+        <div class="board-actions">
+          <span class="save-indicator" id="save-b1">✓ Saved</span>
+          <button class="dl-btn" onclick="downloadPDF('b1')">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download A3 PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-head">
+          <span class="s-num">01</span>
+          <span class="s-title">What's Slowing Us Down?</span>
+          <span class="s-tag">Individual → Group · 10 min</span>
+        </div>
+        <div class="s-fields cols2">
+          <div class="s-field">
+            <label>The task we do most that feels completely manual</label>
+            <span class="hint">Be specific — not "process" but what in the process</span>
+            <textarea data-key="b1_manual" placeholder="Write here..." oninput="autoSave('b1','b1_manual',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>The handoff that always takes longer than it should</label>
+            <span class="hint">Where between teams or steps does time disappear?</span>
+            <textarea data-key="b1_handoff" placeholder="Write here..." oninput="autoSave('b1','b1_handoff',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>The design decision that always gets delayed</label>
+            <span class="hint">What approval or input is always the bottleneck?</span>
+            <textarea data-key="b1_delayed" placeholder="Write here..." oninput="autoSave('b1','b1_delayed',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>The information we always have to search for manually</label>
+            <span class="hint">Data, references, guidelines — what's never where you need it?</span>
+            <textarea data-key="b1_search" placeholder="Write here..." oninput="autoSave('b1','b1_search',this.value)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-head">
+          <span class="s-num">02</span>
+          <span class="s-title">What Do We Hope AI Can Do?</span>
+          <span class="s-tag">Pair Discussion · 5 min</span>
+        </div>
+        <div class="s-fields cols2">
+          <div class="s-field">
+            <label>AI could help our team most by</label>
+            <textarea data-key="b1_aihelp" placeholder="Write here..." oninput="autoSave('b1','b1_aihelp',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>The outcome we most want from AI in our workflow</label>
+            <textarea data-key="b1_outcome" placeholder="Write here..." oninput="autoSave('b1','b1_outcome',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>A concern our team has about AI in design</label>
+            <textarea data-key="b1_concern" placeholder="Write here..." oninput="autoSave('b1','b1_concern',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>One thing we'd like to explore or learn today</label>
+            <textarea data-key="b1_learn" placeholder="Write here..." oninput="autoSave('b1','b1_learn',this.value)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-head">
+          <span class="s-num">03</span>
+          <span class="s-title">Cross-Brand Patterns</span>
+          <span class="s-tag">Group Capture · Facilitator-led</span>
+        </div>
+        <div class="s-fields cols2">
+          <div class="s-field">
+            <label>Pattern heard across multiple brands — #1</label>
+            <textarea data-key="b1_pattern1" placeholder="Write here..." oninput="autoSave('b1','b1_pattern1',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>Pattern heard across multiple brands — #2</label>
+            <textarea data-key="b1_pattern2" placeholder="Write here..." oninput="autoSave('b1','b1_pattern2',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>Biggest shared opportunity the group sees</label>
+            <textarea data-key="b1_opportunity" placeholder="Write here..." oninput="autoSave('b1','b1_opportunity',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>Biggest shared concern the group raised</label>
+            <textarea data-key="b1_sharedconcern" placeholder="Write here..." oninput="autoSave('b1','b1_sharedconcern',this.value)"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOARD 2 — Pain Point Mapping -->
+    <div class="s-board" id="board-b2">
+      <div class="s-board-header">
+        <div>
+          <h3>Board 2 · Identifying Key Pain Points</h3>
+          <p class="meta">Session 2 · 10:35 – 13:00 · Group <span class="group-label">—</span></p>
+        </div>
+        <div class="board-actions">
+          <span class="save-indicator" id="save-b2">✓ Saved</span>
+          <button class="dl-btn" onclick="downloadPDF('b2')">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download A3 PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">01</span><span class="s-title">Speed &amp; Time</span><span class="s-tag">Where is time wasted?</span></div>
+        <div class="s-fields">
+          <div class="s-field"><label>Pain points in this theme</label><textarea data-key="b2_speed" rows="3" placeholder="List pain points, one per line..." oninput="autoSave('b2','b2_speed',this.value)"></textarea></div>
+        </div>
+      </div>
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">02</span><span class="s-title">Communication &amp; Handoffs</span><span class="s-tag">Where do handoffs break?</span></div>
+        <div class="s-fields">
+          <div class="s-field"><label>Pain points in this theme</label><textarea data-key="b2_comms" rows="3" placeholder="List pain points, one per line..." oninput="autoSave('b2','b2_comms',this.value)"></textarea></div>
+        </div>
+      </div>
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">03</span><span class="s-title">Decisions &amp; Approvals</span><span class="s-tag">Where do things stall?</span></div>
+        <div class="s-fields">
+          <div class="s-field"><label>Pain points in this theme</label><textarea data-key="b2_decisions" rows="3" placeholder="List pain points, one per line..." oninput="autoSave('b2','b2_decisions',this.value)"></textarea></div>
+        </div>
+      </div>
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">04</span><span class="s-title">Tools &amp; Data</span><span class="s-tag">What's missing or manual?</span></div>
+        <div class="s-fields">
+          <div class="s-field"><label>Pain points in this theme</label><textarea data-key="b2_tools" rows="3" placeholder="List pain points, one per line..." oninput="autoSave('b2','b2_tools',this.value)"></textarea></div>
+        </div>
+      </div>
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">05</span><span class="s-title">Sampling &amp; Prototyping</span><span class="s-tag">Where is cost highest?</span></div>
+        <div class="s-fields">
+          <div class="s-field"><label>Pain points in this theme</label><textarea data-key="b2_sampling" rows="3" placeholder="List pain points, one per line..." oninput="autoSave('b2','b2_sampling',this.value)"></textarea></div>
+        </div>
+      </div>
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">06</span><span class="s-title">Wildcard</span><span class="s-tag">Anything that doesn't fit above</span></div>
+        <div class="s-fields">
+          <div class="s-field"><label>Other pain points</label><textarea data-key="b2_other" rows="3" placeholder="List pain points, one per line..." oninput="autoSave('b2','b2_other',this.value)"></textarea></div>
+        </div>
+      </div>
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">★</span><span class="s-title">Group's Top 3 Pain Points</span><span class="s-tag">To share with the full room</span></div>
+        <div class="s-fields cols3">
+          <div class="s-field"><label>#1 Most Impactful</label><textarea data-key="b2_top1" placeholder="Write here..." oninput="autoSave('b2','b2_top1',this.value)"></textarea></div>
+          <div class="s-field"><label>#2</label><textarea data-key="b2_top2" placeholder="Write here..." oninput="autoSave('b2','b2_top2',this.value)"></textarea></div>
+          <div class="s-field"><label>#3</label><textarea data-key="b2_top3" placeholder="Write here..." oninput="autoSave('b2','b2_top3',this.value)"></textarea></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOARD 3 — Use Case Cards -->
+    <div class="s-board" id="board-b3">
+      <div class="s-board-header">
+        <div>
+          <h3>Board 3 · Use Case Cards</h3>
+          <p class="meta">Session 3 · 13:00 – 13:45 · Group <span class="group-label">—</span></p>
+        </div>
+        <div class="board-actions">
+          <span class="save-indicator" id="save-b3">✓ Saved</span>
+          <button class="dl-btn" onclick="downloadPDF('b3')">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download A3 PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Card A -->
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">A</span><span class="s-title">Use Case Card A</span><span class="s-tag">Complete fully — post on wall</span></div>
+        <div class="s-fields cols2">
+          <div class="s-field"><label>Pain Point Addressed</label><span class="hint">Which problem from the master map does this solve?</span><textarea data-key="b3_a_pain" placeholder="Write here..." oninput="autoSave('b3','b3_a_pain',this.value)"></textarea></div>
+          <div class="s-field"><label>AI Function</label><span class="hint">What does the AI actually DO here? Be specific.</span><textarea data-key="b3_a_function" placeholder="Write here..." oninput="autoSave('b3','b3_a_function',this.value)"></textarea></div>
+          <div class="s-field"><label>Input Required from Designer</label><span class="hint">What does the designer provide or trigger?</span><textarea data-key="b3_a_input" placeholder="Write here..." oninput="autoSave('b3','b3_a_input',this.value)"></textarea></div>
+          <div class="s-field"><label>Output Delivered</label><span class="hint">What does the designer receive back?</span><textarea data-key="b3_a_output" placeholder="Write here..." oninput="autoSave('b3','b3_a_output',this.value)"></textarea></div>
+          <div class="s-field"><label>Who Benefits</label><span class="hint">Which roles? Which brands?</span><textarea data-key="b3_a_who" placeholder="Write here..." oninput="autoSave('b3','b3_a_who',this.value)"></textarea></div>
+          <div class="s-field"><label>Today's Workaround</label><span class="hint">How is this currently done without AI?</span><textarea data-key="b3_a_workaround" placeholder="Write here..." oninput="autoSave('b3','b3_a_workaround',this.value)"></textarea></div>
+          <div class="s-field" style="grid-column:1/-1"><label>Quick Win or Strategic Bet?</label>
+            <div class="pain-tags">
+              <span class="pain-tag" onclick="toggleTag(this,'b3_a_type','quick')" data-val="quick">Quick Win</span>
+              <span class="pain-tag" onclick="toggleTag(this,'b3_a_type','strategic')" data-val="strategic">Strategic Bet</span>
+              <span class="pain-tag" onclick="toggleTag(this,'b3_a_type','future')" data-val="future">Future Explore</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card B -->
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">B</span><span class="s-title">Use Case Card B</span><span class="s-tag">Complete fully — post on wall</span></div>
+        <div class="s-fields cols2">
+          <div class="s-field"><label>Pain Point Addressed</label><span class="hint">Which problem from the master map does this solve?</span><textarea data-key="b3_b_pain" placeholder="Write here..." oninput="autoSave('b3','b3_b_pain',this.value)"></textarea></div>
+          <div class="s-field"><label>AI Function</label><span class="hint">What does the AI actually DO here? Be specific.</span><textarea data-key="b3_b_function" placeholder="Write here..." oninput="autoSave('b3','b3_b_function',this.value)"></textarea></div>
+          <div class="s-field"><label>Input Required from Designer</label><span class="hint">What does the designer provide or trigger?</span><textarea data-key="b3_b_input" placeholder="Write here..." oninput="autoSave('b3','b3_b_input',this.value)"></textarea></div>
+          <div class="s-field"><label>Output Delivered</label><span class="hint">What does the designer receive back?</span><textarea data-key="b3_b_output" placeholder="Write here..." oninput="autoSave('b3','b3_b_output',this.value)"></textarea></div>
+          <div class="s-field"><label>Who Benefits</label><span class="hint">Which roles? Which brands?</span><textarea data-key="b3_b_who" placeholder="Write here..." oninput="autoSave('b3','b3_b_who',this.value)"></textarea></div>
+          <div class="s-field"><label>Today's Workaround</label><span class="hint">How is this currently done without AI?</span><textarea data-key="b3_b_workaround" placeholder="Write here..." oninput="autoSave('b3','b3_b_workaround',this.value)"></textarea></div>
+          <div class="s-field" style="grid-column:1/-1"><label>Quick Win or Strategic Bet?</label>
+            <div class="pain-tags">
+              <span class="pain-tag" onclick="toggleTag(this,'b3_b_type','quick')" data-val="quick">Quick Win</span>
+              <span class="pain-tag" onclick="toggleTag(this,'b3_b_type','strategic')" data-val="strategic">Strategic Bet</span>
+              <span class="pain-tag" onclick="toggleTag(this,'b3_b_type','future')" data-val="future">Future Explore</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOARD 4 — Impact × Readiness -->
+    <div class="s-board" id="board-b4">
+      <div class="s-board-header">
+        <div>
+          <h3>Board 4 · Cross-Brand AI Direction</h3>
+          <p class="meta">Session 4 · 13:55 – 14:30 · Group <span class="group-label">—</span></p>
+        </div>
+        <div class="board-actions">
+          <span class="save-indicator" id="save-b4">✓ Saved</span>
+          <button class="dl-btn" onclick="downloadPDF('b4')">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download A3 PDF
+          </button>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">↑</span><span class="s-title">Impact × Readiness Matrix</span><span class="s-tag">Designers rate impact · Tech/IT rate readiness</span></div>
+        <div class="matrix-wrap">
+          <div class="matrix-q tl">
+            <label>Strategic Bets — High Impact, Low Readiness</label>
+            <span class="q-hint">High value but needs investment or infrastructure first</span>
+            <textarea data-key="b4_strategic" placeholder="List use cases here..." oninput="autoSave('b4','b4_strategic',this.value)"></textarea>
+          </div>
+          <div class="matrix-q tr">
+            <label>Quick Wins — High Impact, High Readiness</label>
+            <span class="q-hint" style="color:rgba(255,255,255,0.4)">Start here — high value and achievable now</span>
+            <textarea data-key="b4_quickwins" placeholder="List use cases here..." oninput="autoSave('b4','b4_quickwins',this.value)"></textarea>
+          </div>
+          <div class="matrix-q bl">
+            <label>Park For Now — Low Impact, Low Readiness</label>
+            <span class="q-hint">Revisit in future planning cycle</span>
+            <textarea data-key="b4_park" placeholder="List use cases here..." oninput="autoSave('b4','b4_park',this.value)"></textarea>
+          </div>
+          <div class="matrix-q br">
+            <label>Explore Later — Low Impact, High Readiness</label>
+            <span class="q-hint">Possible but lower value — not a priority</span>
+            <textarea data-key="b4_explore" placeholder="List use cases here..." oninput="autoSave('b4','b4_explore',this.value)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">★</span><span class="s-title">Group's Top 3 Recommendations</span><span class="s-tag">Agreed by the group · Goes to tech leadership</span></div>
+        <div class="s-fields cols3">
+          <div class="s-field">
+            <label>Recommendation 1 — Quick Win</label>
+            <span class="hint">What should be started first?</span>
+            <textarea data-key="b4_rec1" placeholder="Write here..." oninput="autoSave('b4','b4_rec1',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>Recommendation 2 — Strategic Bet</label>
+            <span class="hint">What should be invested in next?</span>
+            <textarea data-key="b4_rec2" placeholder="Write here..." oninput="autoSave('b4','b4_rec2',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>Recommendation 3 — Longer Term</label>
+            <span class="hint">What should be on the roadmap?</span>
+            <textarea data-key="b4_rec3" placeholder="Write here..." oninput="autoSave('b4','b4_rec3',this.value)"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="s-section">
+        <div class="s-section-head"><span class="s-num">+</span><span class="s-title">Group Reflection</span><span class="s-tag">One thing to take back to your brand</span></div>
+        <div class="s-fields cols2">
+          <div class="s-field">
+            <label>What surprised us most today</label>
+            <textarea data-key="b4_surprise" placeholder="Write here..." oninput="autoSave('b4','b4_surprise',this.value)"></textarea>
+          </div>
+          <div class="s-field">
+            <label>What we are taking back to our brand</label>
+            <textarea data-key="b4_takeback" placeholder="Write here..." oninput="autoSave('b4','b4_takeback',this.value)"></textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- end studio-board-area -->
+</div><!-- end studio-shell -->
+</div><!-- end #studio page -->
+
+<script>
+// ── STUDIO STATE ──────────────────────────────────────────────────────────
+let currentGroup = null;
+let currentBoard = 'b1';
+// In-memory store: studioData[group][key] = value
+const studioData = { 1: {}, 2: {}, 3: {}, 4: {} };
+
+function selectGroup(g) {
+  currentGroup = g;
+  // Update buttons
+  document.querySelectorAll('.g-btn').forEach((b,i) => {
+    b.classList.toggle('active', i+1 === g);
+  });
+  // Show board nav
+  document.getElementById('studioBoardsNav').style.display = 'flex';
+  document.getElementById('studioPrompt').style.display = 'none';
+  // Update group labels
+  document.querySelectorAll('.group-label').forEach(el => el.textContent = g);
+  // Show first board
+  selectBoard(currentBoard);
+  // Load saved data into fields
+  loadGroupData(g);
+}
+
+function selectBoard(boardId) {
+  currentBoard = boardId;
+  document.querySelectorAll('.s-board').forEach(b => b.classList.remove('active'));
+  const target = document.getElementById('board-' + boardId);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.board-tab').forEach((t,i) => {
+    t.classList.toggle('active', ['b1','b2','b3','b4'][i] === boardId);
+  });
+}
+
+function autoSave(boardId, key, value) {
+  if (!currentGroup) return;
+  studioData[currentGroup][key] = value;
+  // Flash save indicator
+  const ind = document.getElementById('save-' + boardId);
+  if (ind) { ind.classList.add('show'); setTimeout(() => ind.classList.remove('show'), 1500); }
+}
+
+function toggleTag(el, key, val) {
+  if (!currentGroup) return;
+  // Only one selection per group of tags
+  const container = el.closest('.pain-tags');
+  container.querySelectorAll('.pain-tag').forEach(t => t.classList.remove('selected'));
+  el.classList.add('selected');
+  studioData[currentGroup][key] = val;
+}
+
+function loadGroupData(g) {
+  const data = studioData[g];
+  // Restore all textareas
+  document.querySelectorAll('[data-key]').forEach(el => {
+    const k = el.getAttribute('data-key');
+    if (data[k] !== undefined) el.value = data[k];
+    else el.value = '';
+  });
+  // Restore tag selections
+  document.querySelectorAll('.pain-tag').forEach(tag => {
+    const container = tag.closest('.pain-tags');
+    // find key from sibling label
+    const field = container.closest('.s-field');
+    // identify key from first textarea sibling or data attr if present
+    tag.classList.remove('selected');
+  });
+  // Re-apply tag selections
+  ['b3_a_type','b3_b_type'].forEach(k => {
+    if (data[k]) {
+      document.querySelectorAll(`[onclick*="${k}"]`).forEach(t => {
+        t.classList.toggle('selected', t.getAttribute('data-val') === data[k]);
+      });
+    }
+  });
+}
+
+// ── PDF GENERATION ─────────────────────────────────────────────────────────
+// Uses canvas to draw an A3 landscape PDF and triggers download
+// A3 landscape: 420mm × 297mm = 1587 × 1123 px @96dpi, but we use 150dpi for quality
+// We render at 2x scale then encode as PDF via data URL approach using jsPDF
+
+function downloadPDF(boardId) {
+  if (!currentGroup) { alert('Please select a group first.'); return; }
+  const g = currentGroup;
+  const data = studioData[g];
+
+  // Load jsPDF from CDN
+  if (typeof window.jspdf === 'undefined' && !document.getElementById('jspdf-script')) {
+    const s = document.createElement('script');
+    s.id = 'jspdf-script';
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = () => generatePDF(boardId, g, data);
+    document.head.appendChild(s);
+  } else {
+    generatePDF(boardId, g, data);
+  }
+}
+
+function generatePDF(boardId, g, data) {
+  const { jsPDF } = window.jspdf;
+  // A3 landscape in mm: 420 x 297
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
+  const W = 420, H = 297;
+  const M = 12, GM = 5;
+
+  // Colours
+  const C = {
+    accent:  [26, 58, 42],
+    accent2: [45, 99, 71],
+    gold:    [196, 137, 58],
+    goldL:   [232, 184, 109],
+    ink:     [19, 18, 16],
+    muted:   [122, 117, 108],
+    border:  [216, 211, 202],
+    bg:      [247, 244, 239],
+    surface: [255, 255, 255],
+    s2:      [240, 236, 228],
+    white:   [247, 244, 239],
+    red:     [192, 57, 43],
+  };
+
+  function setFill(col) { doc.setFillColor(...col); }
+  function setStroke(col) { doc.setDrawColor(...col); }
+  function setTextC(col) { doc.setTextColor(...col); }
+  function rect(x,y,w,h,fill,stroke) {
+    const style = fill && stroke ? 'FD' : fill ? 'F' : 'D';
+    doc.rect(x,y,w,h,style);
+  }
+  function wrapText(text, x, y, maxW, lineH, size) {
+    if (!text) return y;
+    doc.setFontSize(size || 8);
+    const lines = doc.splitTextToSize(text, maxW);
+    lines.forEach(line => { doc.text(line, x, y); y += lineH || 4; });
+    return y;
+  }
+
+  const boardTitles = {
+    b1: 'Board 1 · Defining the "Why" Behind AI',
+    b2: 'Board 2 · Identifying Key Pain Points',
+    b3: 'Board 3 · Use Case Cards',
+    b4: 'Board 4 · Cross-Brand AI Direction — Impact × Readiness'
+  };
+
+  // ── HEADER ──
+  setFill(C.accent); rect(0,0,W,16,'F');
+  setTextC(C.gold); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+  doc.text(`GROUP ${g}  ·  AI DESIGN TOOLS DISCOVERY DAY  ·  BESTSELLER A/S`, M, 6);
+  setTextC(C.white); doc.setFontSize(11);
+  doc.text(boardTitles[boardId].toUpperCase(), M, 12.5);
+  // Right: date
+  setTextC(C.goldL); doc.setFontSize(7);
+  doc.text('AI Specialist & Designer  ·  OBJECT', W - M, 10, {align:'right'});
+
+  // ── FOOTER ──
+  setFill(C.accent); rect(0,H-9,W,9,'F');
+  setTextC(C.gold); doc.setFont('helvetica','bold'); doc.setFontSize(6);
+  doc.text('AI Design Tools Discovery Day  ·  Bestseller A/S  ·  Thursday', M, H-4);
+  setTextC(C.white); doc.setFont('helvetica','normal');
+  doc.text(`Group ${g}  ·  Confidential`, W-M, H-4, {align:'right'});
+
+  // ── LEFT STRIPE ──
+  setFill(C.gold); rect(0,16,2.5,H-25,'F');
+
+  const CY_TOP = 18;
+  const CY_BOT = H - 10;
+  const CY_H = CY_BOT - CY_TOP;
+  const CW = W - 2*M;
+
+  // ─────────────────────────────────────── BOARD 1
+  if (boardId === 'b1') {
+    const colW = (CW - 2*GM) / 3;
+    const colH = CY_H - 4;
+
+    const cols = [
+      {
+        num:'01', title:"What's Slowing Us Down?", tag:'Individual Reflection',
+        fields:[
+          {label:'Task that feels manual', key:'b1_manual'},
+          {label:'Handoff that always stalls', key:'b1_handoff'},
+          {label:'Decision that gets delayed', key:'b1_delayed'},
+          {label:'Info always searched manually', key:'b1_search'},
+        ]
+      },
+      {
+        num:'02', title:'What Do We Hope AI Can Do?', tag:'Pair Discussion',
+        fields:[
+          {label:'AI could help most by', key:'b1_aihelp'},
+          {label:'Outcome we most want', key:'b1_outcome'},
+          {label:'Concern about AI in design', key:'b1_concern'},
+          {label:'One thing to explore today', key:'b1_learn'},
+        ]
+      },
+      {
+        num:'03', title:'Cross-Brand Patterns', tag:'Group Capture',
+        fields:[
+          {label:'Pattern #1 across brands', key:'b1_pattern1'},
+          {label:'Pattern #2 across brands', key:'b1_pattern2'},
+          {label:'Biggest shared opportunity', key:'b1_opportunity'},
+          {label:'Biggest shared concern', key:'b1_sharedconcern'},
+        ]
+      }
+    ];
+
+    cols.forEach((col, i) => {
+      const cx = M + i * (colW + GM);
+      const cy = CY_TOP + 1;
+      // Column bg
+      setFill(C.surface); setStroke(C.border); doc.setLineWidth(0.3);
+      rect(cx, cy, colW, colH, 'F', 'D');
+      // Header
+      setFill(C.accent); rect(cx, cy, colW, 10, 'F');
+      setTextC(C.gold); doc.setFont('helvetica','bold'); doc.setFontSize(6);
+      doc.text(col.num, cx+2, cy+5);
+      setTextC(C.white); doc.setFontSize(8);
+      doc.text(col.title.toUpperCase(), cx+8, cy+5);
+      setTextC(C.goldL); doc.setFont('helvetica','normal'); doc.setFontSize(6);
+      doc.text(col.tag, cx+3, cy+8.5);
+
+      let fy = cy + 14;
+      const fw = colW - 6;
+      const fh = (colH - 16) / col.fields.length - 3;
+
+      col.fields.forEach(f => {
+        // Label
+        setTextC(C.accent2); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+        doc.text(f.label.toUpperCase(), cx+3, fy);
+        fy += 3.5;
+        // Value box
+        setFill(C.s2); setStroke(C.border); doc.setLineWidth(0.25);
+        rect(cx+3, fy, fw, fh, 'F', 'D');
+        // Left accent
+        setFill(C.gold); rect(cx+3, fy, 1.5, fh, 'F');
+        // Value text
+        const val = data[f.key] || '';
+        setTextC(C.ink); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+        wrapText(val, cx+6, fy+4, fw-5, 3.5, 7.5);
+        fy += fh + 3;
+      });
+    });
+  }
+
+  // ─────────────────────────────────────── BOARD 2
+  if (boardId === 'b2') {
+    const themes = [
+      {num:'01',title:'Speed & Time',key:'b2_speed'},
+      {num:'02',title:'Communication & Handoffs',key:'b2_comms'},
+      {num:'03',title:'Decisions & Approvals',key:'b2_decisions'},
+      {num:'04',title:'Tools & Data',key:'b2_tools'},
+      {num:'05',title:'Sampling & Prototyping',key:'b2_sampling'},
+      {num:'06',title:'Wildcard',key:'b2_other'},
+    ];
+    const ncols = 6;
+    const colW = (CW - (ncols-1)*GM) / ncols;
+    const mainH = CY_H - 20;
+
+    themes.forEach((theme, i) => {
+      const cx = M + i*(colW+GM);
+      const cy = CY_TOP+1;
+      // header
+      setFill(i<5?C.accent:C.muted); rect(cx,cy,colW,9,'F');
+      setTextC(C.gold); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+      doc.text(theme.num, cx+2, cy+5.5);
+      setTextC(C.white); doc.setFontSize(7);
+      const titleLines = doc.splitTextToSize(theme.title, colW-10);
+      titleLines.forEach((l,li) => doc.text(l, cx+9, cy+4+li*3.5));
+      // body
+      setFill(C.surface); setStroke(C.border); doc.setLineWidth(0.3);
+      rect(cx, cy+9, colW, mainH, 'F','D');
+      setFill(C.gold); rect(cx, cy+9, 1.5, mainH, 'F');
+      const val = data[theme.key]||'';
+      setTextC(C.ink); doc.setFont('helvetica','normal'); doc.setFontSize(7);
+      wrapText(val, cx+4, cy+14, colW-6, 3.5, 7);
+    });
+
+    // Top 3 row
+    const topY = CY_TOP + 1 + mainH + 9 + 3;
+    const topH = CY_H - mainH - 9 - 5;
+    setFill(C.surface); setStroke(C.border); doc.setLineWidth(0.3);
+    rect(M, topY, CW, topH, 'F','D');
+    setTextC(C.accent2); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    doc.text("GROUP'S TOP 3 PAIN POINTS:", M+2, topY+5);
+    const rankW = (CW-50)/3;
+    ['#1 MOST IMPACTFUL','#2','#3'].forEach((rl,ri) => {
+      const rx = M+52+ri*(rankW+3);
+      setTextC(C.gold); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+      doc.text(rl, rx, topY+4);
+      setStroke(C.border); doc.setLineWidth(0.4);
+      doc.line(rx, topY+topH-3, rx+rankW-2, topY+topH-3);
+      const val = data[`b2_top${ri+1}`]||'';
+      setTextC(C.ink); doc.setFont('helvetica','normal'); doc.setFontSize(8);
+      wrapText(val, rx, topY+9, rankW-3, 3.8, 8);
+    });
+  }
+
+  // ─────────────────────────────────────── BOARD 3
+  if (boardId === 'b3') {
+    const cardW = (CW - GM) / 2;
+    const cardH = CY_H - 2;
+
+    ['a','b'].forEach((card, ci) => {
+      const cx = M + ci*(cardW+GM);
+      const cy = CY_TOP+1;
+      setFill(C.surface); setStroke(C.accent); doc.setLineWidth(0.8);
+      rect(cx,cy,cardW,cardH,'F','D');
+      // header
+      setFill(C.accent); rect(cx,cy,cardW,10,'F');
+      setTextC(C.gold); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+      doc.text(`USE CASE CARD ${card.toUpperCase()}`, cx+3, cy+6.5);
+      // fields
+      const fields = [
+        {label:'Pain Point Addressed', key:`b3_${card}_pain`},
+        {label:'AI Function', key:`b3_${card}_function`},
+        {label:'Input Required from Designer', key:`b3_${card}_input`},
+        {label:'Output Delivered', key:`b3_${card}_output`},
+        {label:'Who Benefits', key:`b3_${card}_who`},
+        {label:"Today's Workaround", key:`b3_${card}_workaround`},
+      ];
+      const fh = (cardH - 18) / fields.length - 2;
+      let fy = cy+13;
+      fields.forEach(f => {
+        setTextC(C.accent2); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+        doc.text(f.label.toUpperCase(), cx+3, fy);
+        fy += 3.5;
+        setFill(C.s2); setStroke(C.border); doc.setLineWidth(0.25);
+        rect(cx+3, fy, cardW-6, fh, 'F','D');
+        setFill(C.gold); rect(cx+3, fy, 1.5, fh, 'F');
+        const val = data[f.key]||'';
+        setTextC(C.ink); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+        wrapText(val, cx+6, fy+4, cardW-10, 3.5, 7.5);
+        fy += fh+2;
+      });
+      // Type badge
+      const typeVal = data[`b3_${card}_type`]||'';
+      if (typeVal) {
+        setFill(typeVal==='quick'?C.accent:typeVal==='strategic'?C.gold:C.muted);
+        rect(cx+3, fy, cardW-6, 7, 'F');
+        setTextC(C.white); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+        const typeLabel = typeVal==='quick'?'QUICK WIN':typeVal==='strategic'?'STRATEGIC BET':'FUTURE EXPLORE';
+        doc.text(typeLabel, cx+cardW/2, fy+5, {align:'center'});
+      }
+    });
+  }
+
+  // ─────────────────────────────────────── BOARD 4
+  if (boardId === 'b4') {
+    const matW = CW * 0.62;
+    const recW = CW - matW - GM;
+    const recX = M + matW + GM;
+    const matH = CY_H * 0.68;
+    const qW = matW/2, qH = matH/2;
+
+    // Matrix quadrants
+    const quads = [
+      {col:[240,247,243],tx:'STRATEGIC BETS',hint:'High impact · needs investment',key:'b4_strategic',x:M,y:CY_TOP+1},
+      {col:C.accent,tx:'QUICK WINS',hint:'Start here',key:'b4_quickwins',x:M+qW,y:CY_TOP+1,light:true},
+      {col:[250,247,242],tx:'PARK FOR NOW',hint:'Revisit later',key:'b4_park',x:M,y:CY_TOP+1+qH},
+      {col:[255,248,240],tx:'EXPLORE LATER',hint:'Lower value',key:'b4_explore',x:M+qW,y:CY_TOP+1+qH},
+    ];
+    quads.forEach(q => {
+      setFill(q.col); setStroke(C.border); doc.setLineWidth(0.3);
+      rect(q.x,q.y,qW,qH,'F','D');
+      setTextC(q.light?C.gold:C.accent2); doc.setFont('helvetica','bold'); doc.setFontSize(7.5);
+      doc.text(q.tx, q.x+3, q.y+6);
+      setTextC(q.light?[200,180,100]:C.muted); doc.setFont('helvetica','normal'); doc.setFontSize(6);
+      doc.text(q.hint, q.x+3, q.y+10);
+      const val = data[q.key]||'';
+      setTextC(q.light?C.white:C.ink); doc.setFontSize(7.5);
+      wrapText(val, q.x+3, q.y+15, qW-5, 3.5, 7.5);
+    });
+    // Axis labels
+    setTextC(C.accent); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+    doc.text('◀ LOW READINESS', M+2, CY_TOP+1+matH-2);
+    doc.text('HIGH READINESS ▶', M+matW-30, CY_TOP+1+matH-2);
+
+    // Recommendations box
+    setFill(C.surface); setStroke(C.accent); doc.setLineWidth(0.6);
+    rect(recX, CY_TOP+1, recW, matH, 'F','D');
+    setFill(C.accent); rect(recX, CY_TOP+1, recW, 9, 'F');
+    setTextC(C.gold); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    doc.text("TOP 3 RECOMMENDATIONS", recX+3, CY_TOP+7);
+    const recFH = (matH-11)/3 - 2;
+    [{label:'1 · Quick Win',key:'b4_rec1',col:C.accent2},
+     {label:'2 · Strategic Bet',key:'b4_rec2',col:C.gold},
+     {label:'3 · Longer Term',key:'b4_rec3',col:C.muted}].forEach((r,ri) => {
+      const ry = CY_TOP+1+9+3+ri*(recFH+2);
+      setFill(C.s2); setStroke(C.border); doc.setLineWidth(0.25);
+      rect(recX+3,ry,recW-6,recFH,'F','D');
+      setFill(r.col); rect(recX+3,ry,2,recFH,'F');
+      setTextC(r.col); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+      doc.text(r.label.toUpperCase(), recX+7, ry+4.5);
+      const val = data[r.key]||'';
+      setTextC(C.ink); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+      wrapText(val, recX+7, ry+9, recW-12, 3.5, 7.5);
+    });
+
+    // Reflection section below matrix
+    const reflY = CY_TOP+1+matH+4;
+    const reflH = CY_H - matH - 6;
+    setFill(C.surface); setStroke(C.border); doc.setLineWidth(0.3);
+    rect(M, reflY, CW, reflH, 'F','D');
+    setFill(C.accent2); rect(M, reflY, CW, 8, 'F');
+    setTextC(C.white); doc.setFont('helvetica','bold'); doc.setFontSize(7);
+    doc.text('GROUP REFLECTION', M+3, reflY+5.5);
+    const rfw = (CW-GM)/2;
+    [{label:'What surprised us most',key:'b4_surprise',x:M+3},
+     {label:'What we take back to our brand',key:'b4_takeback',x:M+rfw+GM+3}].forEach(rf => {
+      setTextC(C.accent2); doc.setFont('helvetica','bold'); doc.setFontSize(6.5);
+      doc.text(rf.label.toUpperCase(), rf.x, reflY+12);
+      const val = data[rf.key]||'';
+      setTextC(C.ink); doc.setFont('helvetica','normal'); doc.setFontSize(7.5);
+      wrapText(val, rf.x, reflY+17, rfw-5, 3.5, 7.5);
+    });
+  }
+
+  // ── SAVE ──
+  const fname = `Group${g}_Board${boardId.toUpperCase()}_AI_Workshop.pdf`;
+  doc.save(fname);
+}
+</script>
+
+</body>
+</html>
